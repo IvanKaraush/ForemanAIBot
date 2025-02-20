@@ -89,7 +89,7 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
                 replyMarkup: inlineKeyboard,
                 cancellationToken: cancellationToken);
         }
-        else if (userContexts.ContainsKey(chatId)) // Если у пользователя есть контекст
+        else if (userContexts.ContainsKey(chatId))
         {
             var specialization = userContexts[chatId];
             var aiResponse = await deepSeekService.AskAIAsync(specialization, message.Text);

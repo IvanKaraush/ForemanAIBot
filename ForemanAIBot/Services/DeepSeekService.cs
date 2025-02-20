@@ -22,7 +22,6 @@ public class DeepSeekService
 
     public async Task<string> AskAIAsync(Specialization role, string userMessage)
     {
-        // Получаем ключ роли в виде строки
         var roleKey = role.ToString();
 
         // Получаем промпт из конфигурации в зависимости от роли
@@ -35,13 +34,13 @@ public class DeepSeekService
         // Создаем объект настроек запроса
         var requestBody = new
         {
-            model = "deepseek-v3", // Укажите модель
+            model = "deepseek-v3",
             messages = new[]
             {
                 new { role = "system", content = prompt },
                 new { role = "user", content = userMessage }
             },
-            max_tokens = 150 // Ограничение длины ответа
+            max_tokens = 150
         };
         
         var jsonContent = new StringContent(
@@ -61,6 +60,6 @@ public class DeepSeekService
         var responseContent = await response.Content.ReadAsStringAsync();
         var responseObject = JsonSerializer.Deserialize<DeepSeekResponse>(responseContent);
 
-        return responseObject?.Response ?? "Не удалось получить ответ от ИИ.";
+        return responseObject?.ResponseMessage ?? "Не удалось получить ответ от ИИ.";
     }
 }
