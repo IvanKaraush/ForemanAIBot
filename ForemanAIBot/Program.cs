@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -6,10 +8,20 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
+// Настройка сервисов
+var serviceProvider = new ServiceCollection()
+    .AddLogging(builder =>
+    {
+        builder.AddConsole();
+    })
+    .BuildServiceProvider();
+
+var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
 // Загрузка конфигурации
 var configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
     .Build();
 
 var botToken = configuration["BotConfiguration:BotToken"];
@@ -43,7 +55,7 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Ошибка при обработке обновления: {ex.Message}");
+        logger.LogError(ex, "Ошибка при обработке обновления");
     }
 }
 
@@ -53,33 +65,38 @@ Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, 
     var errorMessage = exception switch
     {
         ApiRequestException apiRequestException
-            => $"Ошибка Telegram API:\n{apiRequestException.ErrorCode}\n{apiRequestException.Message}",
-        _ => exception.ToString()
+            => $"Ошибка Telegram API:{Environment.NewLine}{apiRequestException.ErrorCode}{Environment.NewLine}{apiRequestException.Message}",
+        _ => exception.Message
     };
 
-    Console.WriteLine(errorMessage);
+    logger.LogError(exception, "Ошибка при работе с Telegram API: {ErrorMessage}", errorMessage);
     return Task.CompletedTask;
 }
 
 // Настройка опций для бота
 var receiverOptions = new ReceiverOptions
 {
-    AllowedUpdates = Array.Empty<UpdateType>() // Получать все типы обновлений
+    AllowedUpdates = Array.Empty<UpdateType>() 
 };
 
 // Создание обработчика обновлений
 var updateHandler = new DefaultUpdateHandler(HandleUpdateAsync, HandlePollingErrorAsync);
 
 // Запуск бота
-using var cts = new CancellationTokenSource();
+var cts = new CancellationTokenSource();
+try
+{
+    botClient.StartReceiving(
+        updateHandler: updateHandler,
+        receiverOptions: receiverOptions,
+        cancellationToken: cts.Token
+    );
 
-botClient.StartReceiving(
-    updateHandler: updateHandler,
-    receiverOptions: receiverOptions,
-    cancellationToken: cts.Token
-);
-
-Console.WriteLine("Бот запущен. Нажмите Enter для остановки...");
-Console.ReadLine();
-
-cts.Cancel();
+    logger.LogInformation("Бот запущен. Нажмите Enter для остановки...");
+    Console.ReadLine();
+}
+finally
+{
+    cts.Cancel();
+    cts.Dispose();
+}
