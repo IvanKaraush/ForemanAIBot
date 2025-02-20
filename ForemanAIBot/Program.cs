@@ -33,7 +33,9 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
     try
     {
         if (update.Message is not { } message)
-            return;
+        {
+            return;   
+        }
 
         if (message.Text == "/start")
         {
