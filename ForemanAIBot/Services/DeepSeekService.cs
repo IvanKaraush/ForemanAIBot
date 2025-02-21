@@ -1,65 +1,52 @@
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 using ForemanAIBot.DTOs;
+using ForemanAIBot.Interfaces;
+using ForemanAIBot.Options;
 using ForemanAIBot.Primitives;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace ForemanAIBot.Services;
 
-public class DeepSeekService
+public class DeepSeekService : IAIService
 {
-    private readonly HttpClient _httpClient;
-    private readonly string _apiKey;
-    private readonly IConfiguration _configuration;
+    private readonly ApiClient _apiClient;
+    private readonly AIConfiguration _config;
 
-    public DeepSeekService(IConfiguration configuration)
+    public DeepSeekService(ApiClient apiClient, IOptions<AIConfiguration> options)
     {
-        _httpClient = new HttpClient();
-        _configuration = configuration;
-        _apiKey = _configuration["DeepSeekConfiguration:ApiKey"];
+        _apiClient = apiClient;
+        _config = options.Value;
     }
 
-    public async Task<string> AskAIAsync(Specialization role, string userMessage)
+    public async Task<AIResponse> AskAIAsync(AIRequest request)
     {
-        var roleKey = role.ToString();
+        var roleKey = request.Role.ToString();
 
-        // Получаем промпт из конфигурации в зависимости от роли
-        var prompt = _configuration[$"Prompts:{roleKey}"];
+        // Получаем промпт из конфигурации
+        var prompt = _config.Prompts?.GetValueOrDefault(roleKey);
         if (string.IsNullOrEmpty(prompt))
         {
             throw new ArgumentException($"Промпт для роли '{roleKey}' не найден в конфигурации.");
         }
-
-        // Создаем объект настроек запроса
+        
         var requestBody = new
         {
-            model = "deepseek-v3",
+            model = _config.Model,
             messages = new[]
             {
                 new { role = "system", content = prompt },
-                new { role = "user", content = userMessage }
+                new { role = "user", content = request.UserMessage }
             },
-            max_tokens = 150
+            max_tokens = _config.MaxTokens
         };
-        
-        var jsonContent = new StringContent(
-            JsonSerializer.Serialize(requestBody),
-            Encoding.UTF8,
-            "application/json"
+
+        // Выполняем запрос через ApiClient
+        var response = await _apiClient.PostAsync<object, DeepSeekResponse>(
+            _config.BaseUrl,
+            requestBody,
+            _config.ApiKey
         );
-        
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
-        var response = await _httpClient.PostAsync("https://api.deepseek.com/v1/chat/completions", jsonContent);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new HttpRequestException($"Ошибка при запросе к DeepSeek: {response.StatusCode}");
-        }
-        
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var responseObject = JsonSerializer.Deserialize<DeepSeekResponse>(responseContent);
-
-        return responseObject?.ResponseMessage ?? "Не удалось получить ответ от ИИ.";
+        return new AIResponse(response?.ResponseMessage ?? "Не удалось получить ответ от ИИ.");
     }
 }

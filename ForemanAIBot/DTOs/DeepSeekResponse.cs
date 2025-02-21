@@ -1,6 +1,6 @@
 namespace ForemanAIBot.DTOs;
 
-public class DeepSeekResponse
+public sealed record DeepSeekResponse
 {
-    public string ResponseMessage { get; set; }
+    public string ResponseMessage { get; init; } = string.Empty;
 }

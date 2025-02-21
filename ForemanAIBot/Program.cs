@@ -1,4 +1,7 @@
-﻿using ForemanAIBot.Primitives;
+﻿using ForemanAIBot.DTOs;
+using ForemanAIBot.Interfaces;
+using ForemanAIBot.Options;
+using ForemanAIBot.Primitives;
 using ForemanAIBot.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,25 +13,31 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
-// Настройка сервисов
-var serviceProvider = new ServiceCollection()
-    .AddLogging(builder => { builder.AddConsole(); })
-    .AddSingleton<DeepSeekService>()
-    .BuildServiceProvider();
-
-var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
-
 // Загрузка конфигурации
 var configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .AddJsonFile(AppConstants.ConfigFileName, optional: true, reloadOnChange: true)
     .Build();
+
+// Настройка сервисов
+var serviceProvider = new ServiceCollection()
+    .AddLogging(builder => builder.AddConsole())
+    .AddSingleton<IConfiguration>(configuration)
+    .Configure<AIConfiguration>(configuration.GetSection(AppConstants.AIConfigSection))
+    .Configure<Dictionary<string, string>>(configuration.GetSection(AppConstants.PromptsSection))
+    .AddScoped<IAIService, DeepSeekService>()
+    .AddHttpClient()
+    .AddScoped<ApiClient>()
+    .BuildServiceProvider();
+
 
 var botToken = configuration["BotConfiguration:BotToken"];
 var botClient = new TelegramBotClient(botToken);
 
-// Инициализация DeepSeekService
-var deepSeekService = new DeepSeekService(configuration);
+// Получаем нужный класс для работы с ИИ.
+var aiService = serviceProvider.GetRequiredService<IAIService>();
+
+var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
 // Словарь для хранения контекста пользователей (специализация)
 var userContexts = new Dictionary<long, Specialization>();
@@ -92,11 +101,12 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
         else if (userContexts.ContainsKey(chatId))
         {
             var specialization = userContexts[chatId];
-            var aiResponse = await deepSeekService.AskAIAsync(specialization, message.Text);
+            var aiResponse = await aiService.AskAIAsync(
+                new AIRequest(specialization, message.Text));
 
             await botClient.SendTextMessageAsync(
                 chatId: chatId,
-                text: aiResponse,
+                text: aiResponse.Response,
                 cancellationToken: cancellationToken);
         }
     }
