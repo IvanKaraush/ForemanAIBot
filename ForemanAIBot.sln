@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ForemanAIBot", "ForemanAIBot\ForemanAIBot.csproj", "{08514F02-E5DD-4E34-8F5E-0EAD6B9790E6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AiAPIStub", "AiAPIStub\AiAPIStub.csproj", "{4F6626A3-F2C1-4D2F-8FC4-5BE99A4278AF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{08514F02-E5DD-4E34-8F5E-0EAD6B9790E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{08514F02-E5DD-4E34-8F5E-0EAD6B9790E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{08514F02-E5DD-4E34-8F5E-0EAD6B9790E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F6626A3-F2C1-4D2F-8FC4-5BE99A4278AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F6626A3-F2C1-4D2F-8FC4-5BE99A4278AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F6626A3-F2C1-4D2F-8FC4-5BE99A4278AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F6626A3-F2C1-4D2F-8FC4-5BE99A4278AF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

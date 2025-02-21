@@ -1,0 +1,6 @@
+@AiAPIStub_HostAddress = http://localhost:5283
+
+GET {{AiAPIStub_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
