@@ -2,7 +2,6 @@ using ForemanAIBot.DTOs;
 using ForemanAIBot.Interfaces;
 using ForemanAIBot.Options;
 using ForemanAIBot.Primitives;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace ForemanAIBot.Services;
